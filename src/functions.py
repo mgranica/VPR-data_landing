@@ -1,5 +1,8 @@
+from pyspark.sql import SparkSession, DataFrame
 import pyspark.sql.types as t
 import pyspark.sql.functions as f
+import logging
+
 
 
 def read_csv_to_df(spark, file_path, schema=None):
@@ -90,6 +93,63 @@ def write_df_to_metastore(df, file_path, table_name, partition_by=None, _format=
     
     writer.saveAsTable(table_name)
 
+def read_file(spark: SparkSession, file_path: str, file_type: str, schema: t.StructType, options: dict = None):
+    """
+    Reads a file into a PySpark DataFrame using a specified schema.
+
+    :param spark: SparkSession object
+    :param file_path: Path to the file
+    :param file_type: Type of the file (csv, json, parquet, orc)
+    :param schema: Schema to enforce
+    :param options: Optional dictionary of read options (default is None)
+    :return: DataFrame containing the file data
+    """
+    
+    # Validate file_path
+    try:
+        if not isinstance(file_path, str) or not file_path:
+            raise ValueError("Invalid file path provided.")
+
+        if options is None:
+            options = {"multiLine": "true", "mode": "PERMISSIVE"}
+        df = (
+            spark
+            .read
+            .format(file_type.lower())
+            .options(**options)
+            .schema(schema)
+            .load(file_path)
+        )
+        return df
+    except Exception as e:
+        raise IOError(f"Error reading {file_path}: {str(e)}") 
+
+def write_df(df: DataFrame, file_path: str, file_type: str="parquet", mode: str = "overwrite", options: dict = None):
+    """
+    Writes a DataFrame to a specified file format with error handling.
+
+    :param df: The DataFrame to write
+    :param file_path: Path to write the file
+    :param file_type: Type of the file (csv, json, parquet, orc)
+    :param mode: Save mode (default is 'overwrite', other options: 'append', 'ignore', 'error')
+    :param options: Optional dictionary of write options (default is None)
+    """
+    
+    if options is None:
+        options = {}
+    
+    try:
+        # Initialize the writer
+        writer = df.write.format(file_type.lower()).mode(mode).options(**options)
+        
+        # Attempt to save the DataFrame
+        writer.save(file_path)
+        logging.info(f"DataFrame successfully written to {file_path} as {file_type.upper()}")
+    
+    except Exception as e:
+        logging.error(f"Error writing DataFrame to {file_path} as {file_type.upper()}: {str(e)}")
+        raise  # Re-raise the exception after logging it
+
 def transform_clients_bronze_to_silver(clients_df):
     """
     Transform Bronze (raw) Clients DataFrame to Silver (cleaned) DataFrame.
@@ -150,7 +210,13 @@ def transform_products_bronze_to_silver(products_bronze_df):
         # Explode package annidations
         .withColumn("package_explode", f.explode(f.col("packages")))
         # Set prod components array
-        .withColumn("product_components", f.create_map(f.col("package_explode.itemNo"), f.col("package_explode.quantity")))
+        .withColumn("product_components", f.array(
+                f.struct(
+                    f.col("package_explode.itemNo").alias("package_id"),
+                    f.col("package_explode.quantity").alias("package_quantity")
+                )
+            )
+        )
         # Select active columns
         .select(
             f.col("product_id"),
@@ -208,6 +274,7 @@ def transform_packages_silver_to_gold(products_silver_df, min_stock=100):
     packages_gold_df = (
         products_silver_df
         .withColumn("stock_quantity", f.lit(min_stock))
+        .dropDuplicates(["item_number"])
         .select(
             f.col("item_number").alias("package_id"),
             f.col("name"),
