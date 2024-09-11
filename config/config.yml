@@ -6,6 +6,11 @@ paths:
   SILVER: "silver"
   GOLD: "gold"
 
+format:
+  json: "json"
+  parquet: "parquet"
+  delta: "delta" 
+
 raw_data:
   ADDRESS_DATA: "address_data.json"
   CLIENTS_DATA: "client_data.json"

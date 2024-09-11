@@ -2,7 +2,7 @@ from delta import *
 from pyspark.sql import SparkSession
 from pyspark.conf import SparkConf
 
-def create_spark_session(aws_access_key_id, aws_secret_access_key, warehouse_path="s3a://vproptimiserplatform/orders/warehouse", cores_number="2"):
+def create_spark_session(aws_access_key_id, aws_secret_access_key, cores_number="2"):
     """
     Create and configure a Spark session with AWS credentials.
     
@@ -15,26 +15,18 @@ def create_spark_session(aws_access_key_id, aws_secret_access_key, warehouse_pat
         # Configure the Spark session
         conf = (
             SparkConf()
-            .setAppName("VPR-data_landing")  # replace with your desired name
+            .setAppName("VPR-data_landing")
             .set("spark.hadoop.fs.s3a.endpoint", "s3.eu-south-2.amazonaws.com")
             .set("spark.jars.packages", "io.delta:delta-core_2.12:2.3.0,org.apache.hadoop:hadoop-aws:3.3.2")
             .set("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
             .set("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .set("spark.hadoop.fs.s3a.access.key", aws_access_key_id)
             .set("spark.hadoop.fs.s3a.secret.key", aws_secret_access_key)
-            # .set("spark.sql.warehouse.dir", warehouse_path)  # Path to your S3 bucket
-            # .set("spark.sql.catalogImplementation", "hive")
-            # .set("spark.hadoop.hive.metastore.glue.catalogid", "034780493640")
-            # .set("spark.sql.catalog.glue_catalog", "org.apache.spark.sql.hive.glue.GlueCatalog")
-            # .set("spark.sql.hive.metastore.version", "2.3.9")
-            # .set("spark.hadoop.hive.metastore.client.factory.class", 
-                #  "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory")
-            # .set("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com")
             .setMaster(f"local[{cores_number}]")  # replace the * with your desired number of cores. * for use all.
         )
         
         # Build the Spark session
-        builder = SparkSession.builder.config(conf=conf) # .enableHiveSupport()
+        builder = SparkSession.builder.config(conf=conf)
         my_packages = ["org.apache.hadoop:hadoop-aws:3.3.1"]
         spark = configure_spark_with_delta_pip(builder, extra_packages=my_packages).getOrCreate()
 
