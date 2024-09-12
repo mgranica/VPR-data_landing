@@ -25,11 +25,6 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Copy AWS Config
-        run: |
-          mkdir -p ~/.aws
-          cp .aws/config ~/.aws/config  # If you need to copy .aws/config
-
       - name: Run PySpark Job
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
