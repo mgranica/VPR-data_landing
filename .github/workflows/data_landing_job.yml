@@ -1,6 +1,15 @@
 name: Data Landing
 
-on: [push, workflow_dispatch]
+on:
+  # Trigger on push to the main branch
+  push:
+    branches:
+      - main
+  # Allow manual trigger of the workflow
+  workflow_dispatch:
+  # Schedule the workflow to run daily at 10 AM UTC
+  schedule:
+    - cron: "0 10 * * *"
 
 jobs:
   run-pyspark-job:
