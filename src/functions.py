@@ -210,11 +210,10 @@ def transform_products_bronze_to_silver(products_bronze_df):
         # Explode package annidations
         .withColumn("package_explode", f.explode(f.col("packages")))
         # Set prod components array
-        .withColumn("product_components", f.array(
-                f.struct(
-                    f.col("package_explode.itemNo").alias("package_id"),
-                    f.col("package_explode.quantity").alias("package_quantity")
-                )
+        .withColumn("product_components", f.struct(
+            f.col("package_explode.itemNo").alias("package_id"),
+            f.col("package_explode.subitemNo").alias("subpackage_id"),
+            f.col("package_explode.quantity").alias("package_quantity")
             )
         )
         # Select active columns
@@ -223,8 +222,6 @@ def transform_products_bronze_to_silver(products_bronze_df):
             f.col("package_explode.name").alias("name"),
             f.col("category"),
             f.col("package_explode.typeName").alias("type_name"),
-            f.col("package_explode.itemNo").alias("item_number"),
-            f.col("package_explode.articleNumber").alias("article_number"),
             f.col("package_explode.measurements.dimensions.width").alias("width"),
             f.col("package_explode.measurements.dimensions.height").alias("height"),
             f.col("package_explode.measurements.dimensions.length").alias("length"),
@@ -263,7 +260,7 @@ def transform_products_silver_to_gold(products_silver_df):
 
     return products_gold_df
 
-def transform_packages_silver_to_gold(products_silver_df, min_stock=100):
+def transform_packages_silver_to_gold(products_silver_df, min_stock=1000):
     """
     Transform Silver (cleaned) Products DataFrames to Gold (aggregated/enriched) Packages DataFrame.
     
@@ -274,13 +271,18 @@ def transform_packages_silver_to_gold(products_silver_df, min_stock=100):
     packages_gold_df = (
         products_silver_df
         .withColumn("stock_quantity", f.lit(min_stock))
-        .dropDuplicates(["item_number"])
+        .withColumn("package_id", f.col("product_components.package_id"))
+        .withColumn("subpackage_id", f.col("product_components.subpackage_id"))
+        .dropDuplicates(["package_id", "subpackage_id"])
+        .orderBy("package_id")
         .select(
-            f.col("item_number").alias("package_id"),
+            f.col("package_id"),
+            f.col("subpackage_id"),
             f.col("name"),
             f.col("width"),
             f.col("height"),
             f.col("length"),
+            f.col("weight"),
             f.col("volume"),
             f.col("stock_quantity")
         )

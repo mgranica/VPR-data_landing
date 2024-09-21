@@ -34,6 +34,7 @@ addresses_schema = t.StructType([
 
 # Define the schema for the products JSON structure
 products_schema = t.StructType([
+    t.StructField("id", t.IntegerType(), True),
     t.StructField("price", t.FloatType(), True),
     t.StructField("currency", t.StringType(), True),
     t.StructField("measurement_ensembled_text", t.StringType(), True),
@@ -47,9 +48,9 @@ products_schema = t.StructType([
         t.StructField("articleNumber", t.StringType(), True),
         t.StructField("measurements", t.StructType([
             t.StructField("dimensions", t.StructType([
-                t.StructField("width", t.IntegerType(), True),
-                t.StructField("height", t.IntegerType(), True),
-                t.StructField("length", t.IntegerType(), True),
+                t.StructField("width", t.FloatType(), True),
+                t.StructField("height", t.FloatType(), True),
+                t.StructField("length", t.FloatType(), True),
                 t.StructField("unit", t.StringType(), True)
             ]), True),
             t.StructField("weight", t.StructType([
@@ -57,11 +58,12 @@ products_schema = t.StructType([
                 t.StructField("unit", t.StringType(), True)
             ]), True),
             t.StructField("volume", t.StructType([
-                t.StructField("value", t.IntegerType(), True),
+                t.StructField("value", t.FloatType(), True),
                 t.StructField("unit", t.StringType(), True)
             ]), True)
         ]), True),
         t.StructField("quantity", t.IntegerType(), True),
+        t.StructField("subitemNo", t.IntegerType(), True),
     ])), True)
 ])
 
@@ -101,22 +103,21 @@ silver_products_schema = t.StructType([
     t.StructField('name', t.StringType(), True), 
     t.StructField('category', t.StringType(), True), 
     t.StructField('type_name', t.StringType(), True), 
-    t.StructField('item_number', t.StringType(), True), 
-    t.StructField('article_number', t.StringType(), True), 
-    t.StructField('width', t.IntegerType(), True), 
-    t.StructField('height', t.IntegerType(), True), 
-    t.StructField('length', t.IntegerType(), True), 
+    # t.StructField('item_number', t.StringType(), True), 
+    # t.StructField('article_number', t.StringType(), True), 
+    t.StructField('width', t.FloatType(), True), 
+    t.StructField('height', t.FloatType(), True), 
+    t.StructField('length', t.FloatType(), True), 
     t.StructField('weight', t.FloatType(), True), 
-    t.StructField('volume', t.IntegerType(), True), 
+    t.StructField('volume', t.FloatType(), True), 
     t.StructField('package_quantity', t.IntegerType(), True), 
     t.StructField('price', t.FloatType(), True), 
     t.StructField('currency', t.StringType(), True), 
     t.StructField('url', t.StringType(), True),
     t.StructField(
-        'product_components', t.ArrayType(
-            t.StructType([
+        'product_components',t.StructType([
                 t.StructField('package_id', t.StringType(), True), 
+                t.StructField('subpackage_id', t.IntegerType(), True), 
                 t.StructField('package_quantity', t.IntegerType(), True)
-            ]), 
-        False), False)
+        ]), False)
 ])
